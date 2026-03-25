@@ -11,10 +11,12 @@ package cfpproyecto;
 public class CfpProyecto {
 
     /**
-     * @param args the command line arguments
+     * Método principal. Inicia el flujo del programa.
+     *
+     * @param args Argumentos de línea de comandos (no utilizados).
      */
     public static void main(String[] args) {
-        // TODO code application logic here
+        GenerateInfoFiles generator = new GenerateInfoFiles();
+        generator.run();
     }
-    
 }
