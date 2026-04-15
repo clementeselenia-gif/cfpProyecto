@@ -1,0 +1,77 @@
+========================================================================
+ESTADO DEL PROYECTO - cfpProyecto
+Entrega academica - Modulo de Programacion Java
+========================================================================
+
+------------------------------------------------------------------------
+REQUISITOS OBLIGATORIOS - ESTADO ACTUAL
+------------------------------------------------------------------------
+
+[OK] 1. Documentacion Javadoc en clases y metodos principales.
+         - GenerateInfoFiles.java: documentado completamente.
+         - main.java: documentado completamente.
+
+[OK] 2. Buenas practicas de programacion.
+         - Nombres claros de clases, metodos y variables.
+         - Indentacion y espaciado correctos.
+         - Separacion de responsabilidades entre GenerateInfoFiles y main.
+
+[OK] 3. Archivo CSV de vendedores (vendedores_reporte.csv).
+         - Formato: nombre;totalRecaudado
+         - Ordenado de mayor a menor por dinero recaudado.
+
+[OK] 4. Archivo CSV de productos (productos_reporte.csv).
+         - Formato: nombre;precio
+         - Ordenado de mayor a menor por cantidad vendida.
+
+[OK] 5a. Metodo createSalesMenFile(int randomSalesCount, String name, long id)
+          - Genera un archivo de ventas pseudoaleatorio por vendedor.
+          - Clase: GenerateInfoFiles.java
+
+[OK] 5b. Metodo createProductsFile(int productsCount)
+          - Genera el archivo de catalogo de productos con datos aleatorios.
+          - Clase: GenerateInfoFiles.java
+
+[OK] 5c. Metodo createSalesManInfoFile(int salesmanCount)
+          - Genera el archivo de informacion de vendedores con datos aleatorios.
+          - Los nombres y apellidos se extraen de listas de nombres reales.
+          - Clase: GenerateInfoFiles.java
+
+[OK] 6. Exactamente DOS clases con metodo main.
+         - GenerateInfoFiles (genera archivos de entrada).
+         - main (procesa entradas y genera reportes).
+
+[OK] 7. Ningun programa solicita informacion al usuario.
+
+------------------------------------------------------------------------
+REQUISITOS EXTRAS 
+------------------------------------------------------------------------
+
+[OK] c. Deteccion de archivos con formato erroneo o informacion incoherente.
+         - ID de producto desconocido: se omite la linea con aviso.
+         - Cantidad negativa: se omite la linea con aviso.
+         - Precio negativo: se omite la linea con aviso.
+         - Linea con campos insuficientes: se omite con aviso.
+         - Implementado en: main.java (metodo processSalesFile y readProductsInfo)
+
+[PENDIENTE] a. Posibilidad de procesar MAS DE UN archivo por vendedor.
+                - Actualmente cada vendedor tiene exactamente un archivo.
+                - Para implementar: en main.java, buscar todos los archivos
+                  que coincidan con el patron TipoDoc_NumDoc_*.txt en la
+                  carpeta del proyecto y procesarlos todos para el mismo
+                  vendedor.
+
+[PENDIENTE] b. Posibilidad de trabajar con archivos serializados.
+                - Actualmente solo se manejan archivos de texto plano (.txt, .csv).
+------------------------------------------------------------------------
+ORDEN DE EJECUCION CORRECTO
+------------------------------------------------------------------------
+
+1. Ejecutar GenerateInfoFiles  ->  genera productos_info.csv,
+                                    vendedores_info.csv y los .txt de ventas.
+2. Ejecutar main               ->  genera vendedores_reporte.csv
+                                    y productos_reporte.csv.
+
+En NetBeans: clic derecho en cada archivo -> "Run File".
+
+========================================================================
