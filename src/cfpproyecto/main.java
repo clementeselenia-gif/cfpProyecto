@@ -2,9 +2,12 @@ package cfpproyecto;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +27,11 @@ import java.util.Map;
  * de entrada: IDs desconocidos, cantidades o precios negativos, lineas
  * con formato invalido.</p>
  *
+ * <p>Soporta multiples archivos de ventas por vendedor: procesa el archivo
+ * principal TipoDoc_NumDoc.txt y, si existe, un segundo archivo serializado
+ * TipoDoc_NumDoc_2.ser con ventas adicionales del mismo vendedor.</p>
+ *
+ * <p>El programa no solicita informacion al usuario.</p>
  *
  * @author hp
  */
@@ -63,15 +71,26 @@ public class main {
             // 2. Leer lista de vendedores
             List<String[]> salesmen = readSalesmenInfo();
 
-            // 3. Procesar el archivo de ventas de cada vendedor
+            // 3. Procesar archivos de ventas de cada vendedor
             Map<String, Double> salesmenTotals = new HashMap<>();
             for (String[] salesman : salesmen) {
                 String docType   = salesman[0];
                 String docNumber = salesman[1];
                 String fullName  = salesman[2] + " " + salesman[3];
-                String salesFile = docType + "_" + docNumber + ".txt";
 
-                double total = processSalesFile(salesFile, productPrices, productQuantities);
+                double total = 0.0;
+
+                // Archivo principal: texto plano TipoDoc_NumDoc.txt
+                String primaryFile = docType + "_" + docNumber + ".txt";
+                total += processSalesFile(primaryFile, productPrices, productQuantities);
+
+                // Extra [a+b]: archivo adicional serializado TipoDoc_NumDoc_2.ser
+                String serializedFile = docType + "_" + docNumber + "_2.ser";
+                if (new File(serializedFile).exists()) {
+                    total += processSerializedSalesFile(
+                            serializedFile, productPrices, productQuantities);
+                }
+
                 salesmenTotals.put(fullName, total);
             }
 
@@ -305,7 +324,7 @@ public class main {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(SALESMEN_REPORT))) {
             for (Map.Entry<String, Double> entry : entries) {
-                writer.write(entry.getKey() + ";" + entry.getValue());
+                writer.write(entry.getKey() + ";" + String.format("%.2f", entry.getValue()));
                 writer.newLine();
             }
         }
@@ -345,5 +364,88 @@ public class main {
         }
 
         System.out.println("Reporte generado: " + PRODUCTS_REPORT);
+    }
+
+    // =========================================================================
+    // Extra [b]: lectura de archivos de ventas serializados
+    // =========================================================================
+
+    /**
+     * Lee un archivo de ventas serializado (.ser), deserializa la lista de
+     * lineas de venta y acumula el total recaudado y las cantidades vendidas.
+     *
+     * <p>El archivo debe contener un {@code ArrayList<String>} serializado,
+     * donde el primer elemento es la cabecera (TipoDoc;NumDoc) y los
+     * siguientes tienen el formato {@code IDProducto;Cantidad;}.</p>
+     *
+     * <p>Aplica las mismas validaciones que {@link #processSalesFile}:
+     * ID desconocido, cantidad negativa o no numerica.</p>
+     *
+     * @param fileName          Nombre del archivo .ser (ej: CC_12345_2.ser).
+     * @param productPrices     Mapa de precios: productId -> precio unitario.
+     * @param productQuantities Mapa de cantidades acumuladas (se actualiza).
+     * @return Total de dinero recaudado segun este archivo.
+     */
+    @SuppressWarnings("unchecked")
+    private static double processSerializedSalesFile(
+            String fileName,
+            Map<String, Double>  productPrices,
+            Map<String, Integer> productQuantities) {
+
+        double total = 0.0;
+
+        try (ObjectInputStream ois = new ObjectInputStream(
+                new FileInputStream(fileName))) {
+
+            List<String> salesLines = (List<String>) ois.readObject();
+
+            // La primera linea es la cabecera TipoDoc;NumDoc, se omite
+            for (int i = 1; i < salesLines.size(); i++) {
+                String line = salesLines.get(i).trim();
+                if (line.isEmpty()) continue;
+
+                String[] parts = line.split(";");
+                if (parts.length < 2) {
+                    System.err.println("  [AVISO] Formato invalido en linea "
+                            + (i + 1) + " de " + fileName + " - se omite.");
+                    continue;
+                }
+
+                String productId = parts[0].trim();
+                int quantity;
+
+                try {
+                    quantity = Integer.parseInt(parts[1].trim());
+                } catch (NumberFormatException e) {
+                    System.err.println("  [AVISO] Cantidad no numerica en linea "
+                            + (i + 1) + " de " + fileName + " - se omite.");
+                    continue;
+                }
+
+                if (quantity < 0) {
+                    System.err.println("  [AVISO] Cantidad negativa en linea "
+                            + (i + 1) + " de " + fileName + " - se omite.");
+                    continue;
+                }
+
+                if (!productPrices.containsKey(productId)) {
+                    System.err.println("  [AVISO] ID de producto desconocido '"
+                            + productId + "' en " + fileName + " - se omite.");
+                    continue;
+                }
+
+                double price = productPrices.get(productId);
+                total += price * quantity;
+                productQuantities.merge(productId, quantity, Integer::sum);
+            }
+
+            System.out.println("  Archivo serializado procesado: " + fileName);
+
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("  [ERROR] No se pudo deserializar: " + fileName
+                    + " - " + e.getMessage());
+        }
+
+        return total;
     }
 }

@@ -1,8 +1,12 @@
 package cfpproyecto;
 
 import java.io.BufferedWriter;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -13,11 +17,12 @@ import java.util.Random;
  * <ul>
  *   <li>{@value #PRODUCTS_INFO_FILE} - catalogo de productos.</li>
  *   <li>{@value #SALESMEN_INFO_FILE} - informacion de vendedores.</li>
- *   <li>Un archivo TipoDoc_NumDoc.txt por cada vendedor generado.</li>
+ *   <li>Un archivo TipoDoc_NumDoc.txt por cada vendedor (texto plano).</li>
+ *   <li>Un archivo TipoDoc_NumDoc_2.ser por cada vendedor (serializado,
+ *       representa un segundo lote de ventas del mismo vendedor).</li>
  * </ul>
  *
  * <p>El programa no solicita informacion al usuario.</p>
- *
  *
  * @author hp
  */
@@ -193,14 +198,59 @@ public class GenerateInfoFiles {
                 writer.write(docType + ";" + docNumber + ";" + firstName + ";" + lastName);
                 writer.newLine();
 
-                // Crear tambien el archivo de ventas de este vendedor
+                // Crear el archivo de ventas principal (texto plano)
                 createSalesMenFile(15, firstName + " " + lastName, docNumber, docType);
+
+                // Extra [a+b]: crear un segundo archivo de ventas en formato serializado
+                createSerializedSalesFile(8, firstName + " " + lastName, docNumber, docType);
             }
             System.out.println("Vendedores creados: " + SALESMEN_INFO_FILE
                     + " (" + salesmanCount + " vendedores)");
 
         } catch (IOException e) {
             System.err.println("Error al crear " + SALESMEN_INFO_FILE + ": " + e.getMessage());
+        }
+    }
+
+    // =========================================================================
+    // Extra [a + b]: archivo adicional serializado por vendedor
+    // =========================================================================
+
+    /**
+     * Crea un segundo archivo de ventas en formato serializado (.ser)
+     * para un vendedor dado. El archivo representa un lote adicional
+     * de ventas del mismo vendedor y lleva el sufijo "_2".
+     *
+     * <p>Formato interno: {@code ArrayList<String>} donde cada elemento
+     * es una linea de venta con el formato {@code IDProducto;Cantidad;}.</p>
+     *
+     * <p>El archivo se nombra {@code TipoDoc_NumDoc_2.ser}.</p>
+     *
+     * @param salesCount Numero de lineas de venta a generar.
+     * @param name       Nombre del vendedor (se muestra en consola).
+     * @param id         Numero de documento del vendedor.
+     * @param docType    Tipo de documento (CC, CE, PA).
+     */
+    static void createSerializedSalesFile(int salesCount, String name, long id, String docType) {
+        String serFileName = docType + "_" + id + "_2.ser";
+        Random random      = new Random();
+
+        // Construir la lista de lineas de venta
+        List<String> salesLines = new ArrayList<>();
+        salesLines.add(docType + ";" + id);
+        for (int i = 0; i < salesCount; i++) {
+            String productId = String.format("P%03d", random.nextInt(10) + 1);
+            int    quantity  = random.nextInt(10) + 1;
+            salesLines.add(productId + ";" + quantity + ";");
+        }
+
+        // Serializar la lista al archivo .ser
+        try (ObjectOutputStream oos = new ObjectOutputStream(
+                new FileOutputStream(serFileName))) {
+            oos.writeObject(salesLines);
+            System.out.println("  Ventas (ser) creadas: " + serFileName + " - " + name);
+        } catch (IOException e) {
+            System.err.println("  Error al crear " + serFileName + ": " + e.getMessage());
         }
     }
 }
